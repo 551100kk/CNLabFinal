@@ -26,5 +26,7 @@ def send_verification_code(code, target_addr):
         result = smtp.sendmail(sender, receivers, msg.as_string())
         print ("Successed")
         smtp.quit()
+        return 0
     except smtplib.SMTPException:
         print ("Error: can not send the email")
+        return -1
