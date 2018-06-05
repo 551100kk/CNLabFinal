@@ -1,0 +1,76 @@
+{% extends "header.html" %}
+{% block body %}
+
+<div class="row">
+
+    <div class="col-md-12">
+        <div class="alert alert-dismissable alert-success">
+            <h4>Friends</h4>
+            Connect with friends and the world around you.
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="list-group">
+            <div class="list-group-item active">
+                <strong>Send Requests</strong>
+                <input class="myRight" type="text" id="new_user">
+                <span class="glyphicon glyphicon-search myRight" id="add_user"></span>
+            </div>
+            {% for req in pending %}
+            <div class="list-group-item" user="{{ req.user }}">
+                <input type="button" class="btn btn-danger update_friend" value="Cancel Request">
+                <span style="padding-left: 20px" class="glyphicon glyphicon-time"></span>
+                <span>{{ req.time }}</span>
+                <span style="padding-left: 20px" class="glyphicon glyphicon-user"></span>
+                <strong>{{ req.user }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="list-group">
+            <strong class="list-group-item active">Friend Requests</strong>
+            {% for req in askme %}
+            <div class="list-group-item" user="{{ req.user }}">
+                <input type="button" class="btn btn-success update_friend" value="Confirm">
+                <input type="button" class="btn btn-danger update_friend" value="Delete Request">
+                <span style="padding-left: 20px" class="glyphicon glyphicon-time"></span>
+                <span>{{ req.time }}</span>
+                <span style="padding-left: 20px" class="glyphicon glyphicon-user"></span>
+                <strong>{{ req.user }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="list-group">
+            <strong class="list-group-item active">Friends</strong>
+            {% for req in myfriends %}
+            <div class="list-group-item" user="{{ req.user }}">
+                <input type="button" class="btn btn-danger update_friend" value="Unfriend">
+                <span style="padding-left: 20px" class="glyphicon glyphicon-time"></span>
+                <span>{{ req.time }}</span>
+                <span style="padding-left: 20px" class="glyphicon glyphicon-user"></span>
+                <strong>{{ req.user }}</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .myRight {
+        color: black;
+        float: right;
+        padding-right: 10px;
+    }
+</style>
+<script type=text/javascript src="/static/js/friend.js"></script>
+{% endblock %}

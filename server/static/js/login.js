@@ -17,7 +17,7 @@
             else if (msg.res == -3) alert("無法寄出認證信請聯絡管理員");
             else {
                 $("#get_code").prop('disabled', true);
-                alert("認證碼已經寄到您的信箱")
+                alert("認證碼已經寄到您的信箱");
             }
         });
     });
