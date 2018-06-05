@@ -28,6 +28,13 @@ c.execute('''
             FOREIGN KEY(user2) REFERENCES user_login(username)
         );''')
 c.execute('''
+        CREATE TABLE IF NOT EXISTS `gaguang` (
+            `username` TEXT NOT NULL,
+            `message` TEXT NOT NULL,
+            `time`  INTEGER NOT NULL,
+            FOREIGN KEY(username) REFERENCES user_login(username)
+        );''')
+c.execute('''
         INSERT INTO user_login VALUES ('admin', 'myadmin', 1000, 100)
         ''')
 

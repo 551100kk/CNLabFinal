@@ -21,6 +21,12 @@ class Friend:
         self.user = user
         self.time = time
 
+class Message:
+    def __init__(self, user, msg, time):
+        self.user = user
+        self.msg = msg
+        self.time = time
+
 def get_time_str(time):
     value = datetime.datetime.fromtimestamp(time)
     return value.strftime('%Y-%m-%d %H:%M:%S')
@@ -32,7 +38,26 @@ def get_time_str(time):
 def main_page():
     if 'username' not in session:
         return redirect('/login?type=0')
-    return render_template('main.html', user=session['username'])
+    conn = sqlite3.connect('data.db')
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM gaguang ORDER BY time DESC LIMIT 50')
+    res = []
+    for row in cur.fetchall():
+        res.append(Message(row[0], row[1], get_time_str(row[2])))
+    conn.close()
+    return render_template('main.html', user=session['username'], message=res)
+
+@app.route('/gaguang', methods=['POST'])
+def gaguang():
+    username = session['username'];
+    message = request.form['comment']
+    now_time = Time.time()
+    conn = sqlite3.connect('data.db')
+    cur = conn.cursor()
+    cur.execute('INSERT INTO gaguang VALUES (?, ?, ?)', [username, message, now_time])
+    conn.commit()
+    conn.close()
+    return redirect('/')
 
 @app.route("/friend")
 def friend_page():
@@ -214,9 +239,9 @@ def user_register():
     session['username'] = username
     return redirect('/')
 
-@app.route('/admin')
+@app.route('/admin8787')
 def admin():
-    session['username'] = "GG3be0"
+    session['username'] = "admin"
     return redirect('/')
 
 if __name__ == "__main__":

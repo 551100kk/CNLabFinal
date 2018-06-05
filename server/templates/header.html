@@ -12,7 +12,7 @@
         <title>CNLabFinal</title>
     </head>
     <body>
-        <div class="container-fluid">
+        <div class="container-fluid wrapper">
             <div class="row">
                 <div class="col-md-12">
                     <nav class="navbar navbar-inverse">
@@ -36,32 +36,34 @@
             </div>
             {% block body %}
             {% endblock %}
-            <div class="row footer">
-                <div class="col-md-12">
-                    <hr>
-                    <dl>
-                        <dt>
-                            <strong>Powered by Kai-Chieh Chang @ 2018</strong>
-                        </dt>
-                        <dt>
-                            <span class="glyphicon glyphicon-user"></span>
-                            <a href="https://www.facebook.com/masj08">Facebook: Kai-Chieh Chang</a>
-                        </dt>
-                        <dt>
-                            <span class="glyphicon glyphicon-envelope"></span>
-                            <a href="mailto:551100kk@gmail.com">551100kk@gmail.com</a>
-                        </dt>
-                    </dl>
-            </div>
+        </div>
+        <div class="row footer">
+            <div class="col-md-12">
+                <hr>
+                <dl>
+                    <dt>
+                        <strong>Powered by Kai-Chieh Chang @ 2018</strong>
+                    </dt>
+                    <dt>
+                        <span class="glyphicon glyphicon-user"></span>
+                        <a href="https://www.facebook.com/masj08">Facebook: Kai-Chieh Chang</a>
+                    </dt>
+                    <dt>
+                        <span class="glyphicon glyphicon-envelope"></span>
+                        <a href="mailto:551100kk@gmail.com">551100kk@gmail.com</a>
+                    </dt>
+                </dl>
         </div>
     </body>
     <style>
         .footer {
-            position: fixed;
             left: 0;
             bottom: 10px;
             width: 100%;
             text-align: center;
+        }
+        .wrapper {
+            min-height: 85%;
         }
     </style>
 </html>

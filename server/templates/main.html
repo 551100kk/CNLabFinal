@@ -8,4 +8,36 @@
         </div>
     </div>
 </div>
+
+<div class="row" style="padding: 10px">
+    <div class="col-md-6">
+        <h3><strong>系統公告</strong></h3>
+        <ul>
+            <li class="list-item">2018-06-06 尬廣功能目前不需要花費</li>
+        </ul>
+        <hr>
+        <h3><strong>系統更新日誌</strong></h3>
+        <ul>
+            <li class="list-item">2018-06-01 完成帳號申請功能</li>
+            <li class="list-item">2018-06-05 新增好友功能</li>
+        </ul>
+        <hr>
+    </div>
+    <div class="col-md-6">
+        <h3><strong>訪客留言</strong></h3>
+        <form action="/gaguang" method="POST">
+            <div class="form-group">
+                <label for="comment">Comment:</label>
+                <textarea class="form-control" rows="4" id="comment" name="comment"></textarea>
+                <button style="float: right; text-align: right; margin: 10px" type="submit" class="btn btn-default">Submit</button>
+            </div>
+        </form>
+        <hr>
+        {% for row in message %}
+        
+        
+        <p style="white-space:pre; "><strong style="color: blue;">{{ row.time }}</strong><strong> - {{ row.user }} > </strong>{{ row.msg }}</p>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}
