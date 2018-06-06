@@ -38,25 +38,25 @@ def get_time_str(time):
 def main_page():
     if 'username' not in session:
         return redirect('/login?type=0')
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM gaguang ORDER BY time DESC LIMIT 50')
     res = []
-    for row in cur.fetchall():
-        res.append(Message(row[0], row[1], get_time_str(row[2])))
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM gaguang ORDER BY time DESC LIMIT 50')
+        for row in cur.fetchall():
+            res.append(Message(row[0], row[1], get_time_str(row[2])))
     return render_template('main.html', user=session['username'], message=res)
 
 @app.route('/gaguang', methods=['POST'])
 def gaguang():
+    if 'username' not in session:
+        return redirect('/login?type=0')
     username = session['username'];
     message = request.form['comment']
     now_time = Time.time()
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('INSERT INTO gaguang VALUES (?, ?, ?)', [username, message, now_time])
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('INSERT INTO gaguang VALUES (?, ?, ?)', [username, message, now_time])
+        conn.commit()
     return redirect('/')
 
 @app.route("/friend")
@@ -68,18 +68,17 @@ def friend_page():
     askme = []
     myfriends = []
 
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT user2, time FROM friend_request WHERE user1 = ?', [session['username']])
-    for row in cur.fetchall():
-        pending.append(Friend(row[0], get_time_str(row[1])))
-    cur.execute('SELECT user1, time FROM friend_request WHERE user2 = ?', [session['username']])
-    for row in cur.fetchall():
-        askme.append(Friend(row[0], get_time_str(row[1])))
-    cur.execute('SELECT user2, time FROM friend WHERE user1 = ?', [session['username']])
-    for row in cur.fetchall():
-        myfriends.append(Friend(row[0], get_time_str(row[1])))
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT user2, time FROM friend_request WHERE user1 = ?', [session['username']])
+        for row in cur.fetchall():
+            pending.append(Friend(row[0], get_time_str(row[1])))
+        cur.execute('SELECT user1, time FROM friend_request WHERE user2 = ?', [session['username']])
+        for row in cur.fetchall():
+            askme.append(Friend(row[0], get_time_str(row[1])))
+        cur.execute('SELECT user2, time FROM friend WHERE user1 = ?', [session['username']])
+        for row in cur.fetchall():
+            myfriends.append(Friend(row[0], get_time_str(row[1])))
 
     return render_template('friend.html', user=session['username'], pending=pending,
                            askme=askme, myfriends=myfriends)
@@ -91,33 +90,30 @@ def friend_request():
     If they are not firend now and each user do not have the pending request to each other,
     this function will add a new record to the database.
     """
+    if 'username' not in session:
+        return redirect('/login?type=0')
     user1 = session['username']
     user2 = request.form['username']
     now_time = Time.time()
     if not re.search(ID_REG, user2) and user2 != 'admin':
         return jsonify(res=-4)
     # check friend
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM friend WHERE user1 = ? AND user2 = ?', [user1, user2])
-    if cur.fetchall() or user1 == user2:
-        conn.close()
-        return jsonify(res=-1)
-    cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user1, user2])
-    if cur.fetchall():
-        conn.close()
-        return jsonify(res=-2)
-    cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
-    if cur.fetchall():
-        conn.close()
-        return jsonify(res=-3)
-    cur.execute('SELECT * FROM user_login WHERE username = ?', [user2])
-    if not cur.fetchall():
-        conn.close()
-        return jsonify(res=-4)
-    cur.execute('INSERT INTO friend_request VALUES (?, ?, ?)', [user1, user2, now_time])
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM friend WHERE user1 = ? AND user2 = ?', [user1, user2])
+        if cur.fetchall() or user1 == user2:
+            return jsonify(res=-1)
+        cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user1, user2])
+        if cur.fetchall():
+            return jsonify(res=-2)
+        cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
+        if cur.fetchall():
+            return jsonify(res=-3)
+        cur.execute('SELECT * FROM user_login WHERE username = ?', [user2])
+        if not cur.fetchall():
+            return jsonify(res=-4)
+        cur.execute('INSERT INTO friend_request VALUES (?, ?, ?)', [user1, user2, now_time])
+        conn.commit()
     return jsonify(res=0)
 
 @app.route("/friend_update", methods=['POST'])
@@ -129,6 +125,8 @@ def friend_update():
     2:  cancel an add-friend request
     3:  delete a friend
     """
+    if 'username' not in session:
+        return redirect('/login?type=0')
     user1 = session['username']
     user2 = request.form['username']
     request_type = request.form['request_type']
@@ -137,28 +135,26 @@ def friend_update():
     if request_type not in ['0', '1', '2', '3']:
         return jsonify(res=-1)
 
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    # check
-    if request_type == '0':
-        cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
-        if not cur.fetchall():
-            conn.close()
-            return jsonify(res=-1)
-    # update
-    if request_type != '3':
-        if request_type == '2':
-            cur.execute('DELETE FROM friend_request WHERE user1 = ? AND user2 = ?', [user1, user2])
-        else:
-            cur.execute('DELETE FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        # check
         if request_type == '0':
-            cur.execute('INSERT INTO friend VALUES (?, ?, ?)', [user1, user2, now_time])
-            cur.execute('INSERT INTO friend VALUES (?, ?, ?)', [user2, user1, now_time])
-    else:
-        cur.execute('DELETE FROM friend WHERE user1 = ? AND user2 = ?', [user1, user2])
-        cur.execute('DELETE FROM friend WHERE user1 = ? AND user2 = ?', [user2, user1])
-    conn.commit()
-    conn.close()
+            cur.execute('SELECT * FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
+            if not cur.fetchall():
+                return jsonify(res=-1)
+        # update
+        if request_type != '3':
+            if request_type == '2':
+                cur.execute('DELETE FROM friend_request WHERE user1 = ? AND user2 = ?', [user1, user2])
+            else:
+                cur.execute('DELETE FROM friend_request WHERE user1 = ? AND user2 = ?', [user2, user1])
+            if request_type == '0':
+                cur.execute('INSERT INTO friend VALUES (?, ?, ?)', [user1, user2, now_time])
+                cur.execute('INSERT INTO friend VALUES (?, ?, ?)', [user2, user1, now_time])
+        else:
+            cur.execute('DELETE FROM friend WHERE user1 = ? AND user2 = ?', [user1, user2])
+            cur.execute('DELETE FROM friend WHERE user1 = ? AND user2 = ?', [user2, user1])
+        conn.commit()
     return jsonify(res=0)
 
 
@@ -179,12 +175,10 @@ def user_login():
     if not re.search(ID_REG, username) and username != 'admin':
         return redirect('/login?type=1')
 
-
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM user_login WHERE username = ? AND password = ?', [username, password])
-    res = cur.fetchall()
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM user_login WHERE username = ? AND password = ?', [username, password])
+        res = cur.fetchall()
 
     if res:
         session['username'] = username
@@ -204,11 +198,10 @@ def get_code():
     username = request.form['username']
     if not re.search(ID_REG, username):
         return jsonify(res=-1)
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM user_login WHERE username = ?', [username])
-    res = cur.fetchall()
-    conn.close()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM user_login WHERE username = ?', [username])
+        res = cur.fetchall()
     if res:
         return jsonify(res=-2)
 
@@ -230,12 +223,12 @@ def user_register():
     print(CODE_MAP.get(username))
     if code != CODE_MAP.get(username):
         return redirect('/login?type=2')
-    conn = sqlite3.connect('data.db')
-    cur = conn.cursor()
-    cur.execute('INSERT INTO user_login VALUES (?, ?, ?, ?)'
-                , [username, password, INIT_POINT, INIT_COIN])
-    conn.commit()
-    conn.close()
+    CODE_MAP.pop(username, None)
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('INSERT INTO user_login VALUES (?, ?, ?, ?)'
+                    , [username, password, INIT_POINT, INIT_COIN])
+        conn.commit()
     session['username'] = username
     return redirect('/')
 
