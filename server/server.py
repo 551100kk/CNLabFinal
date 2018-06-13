@@ -31,7 +31,6 @@ def get_time_str(time):
     value = datetime.datetime.fromtimestamp(time)
     return value.strftime('%Y-%m-%d %H:%M:%S')
 
-
 ######################### request function #########################
 
 @app.route("/")
@@ -39,12 +38,15 @@ def main_page():
     if 'username' not in session:
         return redirect('/login?type=0')
     res = []
+    user_info = ()
     with sqlite3.connect('data.db') as conn:
         cur = conn.cursor()
         cur.execute('SELECT * FROM gaguang ORDER BY time DESC LIMIT 50')
         for row in cur.fetchall():
             res.append(Message(row[0], row[1], get_time_str(row[2])))
-    return render_template('main.html', user=session['username'], message=res)
+        cur.execute('SELECT coin, point FROM  user_login WHERE username = ?', [session['username']])
+        user_info = cur.fetchall()[0]
+    return render_template('main.html', user=session['username'], message=res, user_info=user_info)
 
 @app.route('/gaguang', methods=['POST'])
 def gaguang():
@@ -67,6 +69,7 @@ def friend_page():
     pending = []
     askme = []
     myfriends = []
+    user_info = ()
 
     with sqlite3.connect('data.db') as conn:
         cur = conn.cursor()
@@ -79,9 +82,11 @@ def friend_page():
         cur.execute('SELECT user2, time FROM friend WHERE user1 = ?', [session['username']])
         for row in cur.fetchall():
             myfriends.append(Friend(row[0], get_time_str(row[1])))
+        cur.execute('SELECT coin, point FROM  user_login WHERE username = ?', [session['username']])
+        user_info = cur.fetchall()[0]
 
     return render_template('friend.html', user=session['username'], pending=pending,
-                           askme=askme, myfriends=myfriends)
+                           askme=askme, myfriends=myfriends, user_info=user_info)
 
 @app.route("/friend_request", methods=['POST'])
 def friend_request():
@@ -231,6 +236,86 @@ def user_register():
         conn.commit()
     session['username'] = username
     return redirect('/')
+
+@app.route("/wallet", methods=['GET'])
+def wallet_page():
+    if 'username' not in session:
+        return redirect('/login?type=0')
+    username = session['username']
+    error = ""
+    get_error = request.args.get('error')
+    if get_error:
+        error = get_error
+    user_info = ()
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT coin, point FROM user_login WHERE username = ?', [session['username']])
+        user_info = cur.fetchall()[0]
+    return render_template('wallet.html', user=session['username'], user_info=user_info, error=error)
+
+@app.route("/deposit", methods=['POST'])
+def deposit():
+    if 'username' not in session:
+        return redirect('/login?type=0')
+    error = ""
+    username = session['username']
+    amount = request.form['amount']
+    try:
+        amount = int(amount)
+        if amount <= 0:
+            raise Exception("The amount must greater than 0")
+        if amount >= 10000:
+            raise Exception("The amount must less than 0")
+    except ValueError:
+        error = "The amount must be an integer!"
+    except Exception as e:
+        error = str(e)
+    if error:
+        return redirect('/wallet?error=' + error)
+
+    with sqlite3.connect('data.db') as conn:
+        cur = conn.cursor()
+        cur.execute('UPDATE user_login SET coin = coin + ? WHERE username = ?', [amount, session['username']])
+        conn.commit()
+
+    return redirect('/wallet')
+
+@app.route("/transfer", methods=['POST'])
+def transfer():
+    if 'username' not in session:
+        return redirect('/login?type=0')
+    error = ""
+    username = session['username']
+    target = request.form['user']
+    amount = request.form['amount']
+    try:
+        amount = int(amount)
+        if amount <= 0:
+            raise Exception("The amount must greater than 0")
+        if amount >= 10000:
+            raise Exception("The amount must less than 0")
+        with sqlite3.connect('data.db') as conn:
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM user_login WHERE username = ?', [target])
+            if not cur.fetchall():
+                raise Exception("User not found!")
+            cur.execute('begin')
+            cur.execute('SELECT coin FROM user_login WHERE username = ?', [username])
+            if cur.fetchall()[0][0] < amount:
+                raise Exception("Insufficient coin!")
+            cur.execute('UPDATE user_login SET coin = coin - ? WHERE username = ?', [amount, username])
+            cur.execute('UPDATE user_login SET coin = coin + ? WHERE username = ?', [amount, target])
+            cur.execute('commit')
+            conn.commit()
+
+    except ValueError:
+        error = "The amount must be an integer!"
+    except Exception as e:
+        error = str(e)
+    if error:
+        return redirect('/wallet?error=' + error)
+
+    return redirect('/wallet')
 
 @app.route('/admin8787')
 def admin():
